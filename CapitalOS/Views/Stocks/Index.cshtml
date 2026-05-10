@@ -1,0 +1,483 @@
+﻿@model CapitalOS.Models.StockSearchViewModel
+@{
+    ViewData["Title"] = "Markets — CapitalOS";
+}
+
+@* ── Ticker tape ── *@
+<div class="ticker-wrap">
+    <div class="ticker-label">LIVE</div>
+    <div class="ticker-track" id="tickerTrack">
+        @{
+            /* Combine all three lists for a richer ticker */
+            var allStocks = Model.MostActive
+            .Concat(Model.TopGainers)
+            .Concat(Model.TopLosers)
+            .Take(12)
+            .ToList();
+        }
+        @foreach (var t in allStocks)
+        {
+            <span class="tick-item">
+                <span class="tick-sym">@t.Symbol</span>
+                <span class="tick-price">$@t.Price.ToString("N2")</span>
+                <span class="tick-chg @(t.ChangePercent >= 0 ? "pos" : "neg")">
+                    @(t.ChangePercent >= 0 ? "+" : "")@t.ChangePercent.ToString("N2")%
+                </span>
+            </span>
+        }
+    </div>
+</div>
+
+@* ── Page shell ── *@
+<div class="cap-page">
+    <div class="cap-inner" style="display:flex;flex-direction:column;gap:1.4rem;">
+
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div class="market-error">@ViewBag.ErrorMessage</div>
+        }
+
+        @* ─────────────────────────────────────────
+           INDEX BAR
+           Replace hardcoded values with model data
+           when you add a MarketIndices property.
+        ─────────────────────────────────────────── *@
+        <div class="index-bar" id="indexBar">
+            @* Placeholder cards — swap for @Model.MarketIndices when available *@
+            @{
+                var indices = new[]
+                {
+                        new { Label = "S&P 500",   Value = "5,308", Chg = "+0.74%", Pos = true  },
+                        new { Label = "NASDAQ",    Value = "16,742",Chg = "+1.12%", Pos = true  },
+                        new { Label = "DOW JONES", Value = "39,814",Chg = "+0.31%", Pos = true  },
+                        new { Label = "VIX",       Value = "14.28", Chg = "-3.50%", Pos = false },
+                        };
+            }
+            @foreach (var idx in indices)
+            {
+                <div class="index-card">
+                    <div class="idx-meta">
+                        <div class="idx-label">@idx.Label</div>
+                        <div class="idx-value">@idx.Value</div>
+                    </div>
+                    <div class="idx-spark">
+                        @* Sparklines rendered by JS below *@
+                        <canvas class="idx-spark-canvas" width="80" height="34"
+                                data-positive="@idx.Pos.ToString().ToLower()"></canvas>
+                    </div>
+                    <span class="idx-change @(idx.Pos ? "pos" : "neg")">@idx.Chg</span>
+                </div>
+            }
+        </div>
+
+        @* ─────────────────────────────────────────
+           SECTION HEADING
+        ─────────────────────────────────────────── *@
+        <div class="section-meta">
+            <span class="section-title">Market Discovery</span>
+            <a asp-controller="Stocks" asp-action="Index" class="section-link">
+                View all stocks →
+            </a>
+        </div>
+
+        @* ─────────────────────────────────────────
+           DISCOVERY GRID  (3 columns)
+        ─────────────────────────────────────────── *@
+        <div class="discovery-grid">
+
+            @* ── Column 1: Most Active ── *@
+            <div class="discovery-col">
+                <div class="col-heading">
+                    <span class="col-dot blue"></span>
+                    Most Tracked
+                </div>
+
+                @if (Model.MostActive.Any())
+                {
+                    var feat = Model.MostActive.First();
+                    var pos = feat.ChangePercent >= 0;
+                    <a asp-controller="Home"
+                       asp-action="Index"
+                       asp-route-symbol="@feat.Symbol"
+                       class="featured-card"
+                       data-positive="@pos.ToString().ToLower()">
+
+                        <canvas class="bg-spark"></canvas>
+
+                        <div>
+                            <span class="featured-symbol">@feat.Symbol</span>
+                            <span class="featured-name">@feat.CompanyName</span>
+                        </div>
+
+                        <div class="featured-price-row">
+                            <div>
+                                <div class="featured-price">$@feat.Price.ToString("N2")</div>
+                            </div>
+                            <span class="badge-chg @(pos ? "pos" : "neg")">
+                                @(pos ? "▲" : "▼")
+                                @(pos ? "+" : "")@feat.ChangePercent.ToString("N2")%
+                            </span>
+                        </div>
+                    </a>
+
+                    <div class="list-card">
+                        @foreach (var stock in Model.MostActive.Skip(1).Take(4))
+                        {
+                            var sPos = stock.ChangePercent >= 0;
+                            <a asp-controller="Home"
+                               asp-action="Index"
+                               asp-route-symbol="@stock.Symbol"
+                               class="discovery-stock-row">
+                                <div class="row-bar @(sPos ? "" : "neg")"></div>
+                                <div class="row-info">
+                                    <span class="row-sym">@stock.Symbol</span>
+                                    <span class="row-co">@stock.CompanyName</span>
+                                </div>
+                                <div class="row-sparkline">
+                                    <canvas width="64" height="28"
+                                            data-positive="@sPos.ToString().ToLower()"
+                                            class="row-spark-canvas"></canvas>
+                                </div>
+                                <div class="row-price-block">
+                                    <span class="row-price">$@stock.Price.ToString("N2")</span>
+                                    <span class="row-pct @(sPos ? "pos" : "neg")">
+                                        @(sPos ? "+" : "")@stock.ChangePercent.ToString("N2")%
+                                    </span>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+
+            @* ── Column 2: Top Gainers ── *@
+            <div class="discovery-col">
+                <div class="col-heading">
+                    <span class="col-dot green"></span>
+                    Top Gainers
+                </div>
+
+                @if (Model.TopGainers.Any())
+                {
+                    var feat = Model.TopGainers.First();
+                    var pos = feat.ChangePercent >= 0;
+                    <a asp-controller="Home"
+                       asp-action="Index"
+                       asp-route-symbol="@feat.Symbol"
+                       class="featured-card"
+                       data-positive="@pos.ToString().ToLower()">
+
+                        <canvas class="bg-spark"></canvas>
+
+                        <div>
+                            <span class="featured-symbol">@feat.Symbol</span>
+                            <span class="featured-name">@feat.CompanyName</span>
+                        </div>
+
+                        <div class="featured-price-row">
+                            <div>
+                                <div class="featured-price">$@feat.Price.ToString("N2")</div>
+                            </div>
+                            <span class="badge-chg @(pos ? "pos" : "neg")">
+                                @(pos ? "▲" : "▼")
+                                @(pos ? "+" : "")@feat.ChangePercent.ToString("N2")%
+                            </span>
+                        </div>
+                    </a>
+
+                    <div class="list-card">
+                        @foreach (var stock in Model.TopGainers.Skip(1).Take(4))
+                        {
+                            var sPos = stock.ChangePercent >= 0;
+                            <a asp-controller="Home"
+                               asp-action="Index"
+                               asp-route-symbol="@stock.Symbol"
+                               class="discovery-stock-row">
+                                <div class="row-bar @(sPos ? "" : "neg")"></div>
+                                <div class="row-info">
+                                    <span class="row-sym">@stock.Symbol</span>
+                                    <span class="row-co">@stock.CompanyName</span>
+                                </div>
+                                <div class="row-sparkline">
+                                    <canvas width="64" height="28"
+                                            data-positive="@sPos.ToString().ToLower()"
+                                            class="row-spark-canvas"></canvas>
+                                </div>
+                                <div class="row-price-block">
+                                    <span class="row-price">$@stock.Price.ToString("N2")</span>
+                                    <span class="row-pct @(sPos ? "pos" : "neg")">
+                                        @(sPos ? "+" : "")@stock.ChangePercent.ToString("N2")%
+                                    </span>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+
+            @* ── Column 3: Top Losers ── *@
+            <div class="discovery-col">
+                <div class="col-heading">
+                    <span class="col-dot red"></span>
+                    Top Losers
+                </div>
+
+                @if (Model.TopLosers.Any())
+                {
+                    var feat = Model.TopLosers.First();
+                    var pos = feat.ChangePercent >= 0;
+                    <a asp-controller="Home"
+                       asp-action="Index"
+                       asp-route-symbol="@feat.Symbol"
+                       class="featured-card"
+                       data-positive="@pos.ToString().ToLower()">
+
+                        <canvas class="bg-spark"></canvas>
+
+                        <div>
+                            <span class="featured-symbol">@feat.Symbol</span>
+                            <span class="featured-name">@feat.CompanyName</span>
+                        </div>
+
+                        <div class="featured-price-row">
+                            <div>
+                                <div class="featured-price">$@feat.Price.ToString("N2")</div>
+                            </div>
+                            <span class="badge-chg @(pos ? "pos" : "neg")">
+                                @(pos ? "▲" : "▼")
+                                @(pos ? "+" : "")@feat.ChangePercent.ToString("N2")%
+                            </span>
+                        </div>
+                    </a>
+
+                    <div class="list-card">
+                        @foreach (var stock in Model.TopLosers.Skip(1).Take(4))
+                        {
+                            var sPos = stock.ChangePercent >= 0;
+                            <a asp-controller="Home"
+                               asp-action="Index"
+                               asp-route-symbol="@stock.Symbol"
+                               class="discovery-stock-row">
+                                <div class="row-bar @(sPos ? "" : "neg")"></div>
+                                <div class="row-info">
+                                    <span class="row-sym">@stock.Symbol</span>
+                                    <span class="row-co">@stock.CompanyName</span>
+                                </div>
+                                <div class="row-sparkline">
+                                    <canvas width="64" height="28"
+                                            data-positive="@sPos.ToString().ToLower()"
+                                            class="row-spark-canvas"></canvas>
+                                </div>
+                                <div class="row-price-block">
+                                    <span class="row-price">$@stock.Price.ToString("N2")</span>
+                                    <span class="row-pct @(sPos ? "pos" : "neg")">
+                                        @(sPos ? "+" : "")@stock.ChangePercent.ToString("N2")%
+                                    </span>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+
+        </div>
+        @* end .discovery-grid *@
+
+        @* ─────────────────────────────────────────
+           SEARCH BAR
+        ─────────────────────────────────────────── *@
+        <form method="get"
+              asp-controller="Stocks"
+              asp-action="Index"
+              id="searchForm"
+              onsubmit="return true;">
+            <div class="search-bar-wrap">
+                <span class="search-bar-icon">⌕</span>
+                <input type="text"
+                       id="searchInput"
+                       name="query"
+                       value="@Model.Query"
+                       class="search-bar-input"
+                       placeholder="Search markets, companies, tickers…"
+                       autocomplete="off" />
+                <div class="search-kbd-hints">
+                    <span class="kbd-hint">↵ Search</span>
+                    <span class="kbd-hint">Esc</span>
+                </div>
+                <button type="submit" class="search-submit-btn">Search Markets</button>
+            </div>
+        </form>
+
+        @* ─────────────────────────────────────────
+           SEARCH RESULTS
+        ─────────────────────────────────────────── *@
+        @if (!string.IsNullOrWhiteSpace(Model.Query))
+        {
+            <div class="results-panel">
+                <div class="results-panel-header">
+                    <div>
+                        <div class="eyebrow">Search Results</div>
+                        <div class="results-title">
+                            @Model.SearchResults.Count
+                            result@(Model.SearchResults.Count != 1 ? "s" : "")
+                            for "@Model.Query"
+                        </div>
+                    </div>
+                    <span class="results-count">
+                        @Model.SearchResults.Count match@(Model.SearchResults.Count != 1 ? "es" : "")
+                    </span>
+                </div>
+
+                @if (Model.SearchResults.Any())
+                {
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Company</th>
+                                <th>Region / Sector</th>
+                                <th style="text-align:right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Model.SearchResults)
+                            {
+                                <tr>
+                                    <td class="res-symbol">@s.Symbol</td>
+                                    <td class="res-company">@s.CompanyName</td>
+                                    <td class="res-region">@s.Sector</td>
+                                    <td>
+                                        <a asp-controller="Home"
+                                           asp-action="Index"
+                                           asp-route-symbol="@s.Symbol"
+                                           class="view-stock-link">
+                                            View ↗
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="no-results">No results found for that query.</div>
+                }
+            </div>
+        }
+
+    </div>
+</div>
+@* end .cap-page *@
+
+@* ══════════════════════════════════════════════
+   SCRIPTS
+══════════════════════════════════════════════ *@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+    (function () {
+        /* ── Ticker tape: duplicate for seamless scroll ── */
+        const track = document.getElementById('tickerTrack');
+        if (track) track.innerHTML += track.innerHTML;
+
+        /* ── Random walk helper for sparklines ──
+           Replace data with real historical points from your API if available. */
+        function randomWalk(points, vol, forceDir) {
+            const d = [100];
+            for (let i = 1; i < points; i++) {
+                const bias = (forceDir || 0) * 0.005;
+                d.push(Math.max(d[i - 1] * (1 + bias + (Math.random() - 0.5) * vol), 0.01));
+            }
+            return d;
+        }
+
+        /* ── Shared Chart.js sparkline renderer ── */
+        function drawSparkline(canvas, positive, points, w, h, filled) {
+            if (!canvas) return;
+            canvas.width  = w || canvas.width;
+            canvas.height = h || canvas.height;
+            const color = positive ? '#00d26a' : '#ff5256';
+            const dir   = positive ? 1 : -1;
+            const data  = randomWalk(points, 0.018, dir);
+
+            const ctx = canvas.getContext('2d');
+            let bg = false;
+            if (filled) {
+                const g = ctx.createLinearGradient(0, 0, 0, h || canvas.height);
+                g.addColorStop(0, (positive ? 'rgba(0,210,106,0.22)' : 'rgba(255,82,86,0.22)'));
+                g.addColorStop(1, 'rgba(0,0,0,0)');
+                bg = g;
+            }
+
+            new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: data.map((_, i) => i),
+                    datasets: [{
+                        data,
+                        borderColor: color,
+                        borderWidth: filled ? 1.5 : 1.5,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        fill: filled,
+                        backgroundColor: bg || false,
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    animation: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: { x: { display: false }, y: { display: false } }
+                }
+            });
+        }
+
+        /* ── Index bar sparklines ── */
+        document.querySelectorAll('.idx-spark-canvas').forEach(c => {
+            drawSparkline(c, c.dataset.positive === 'true', 30, 80, 34, false);
+        });
+
+        /* ── Featured card background sparklines ── */
+        document.querySelectorAll('.featured-card').forEach(card => {
+            const canvas = card.querySelector('canvas.bg-spark');
+            if (!canvas) return;
+            const pos = card.dataset.positive === 'true';
+            /* size canvas to card width at render time */
+            const w = card.offsetWidth || 280;
+            drawSparkline(canvas, pos, 50, w, 72, true);
+        });
+
+        /* ── Row sparklines ── */
+        document.querySelectorAll('canvas.row-spark-canvas').forEach(c => {
+            drawSparkline(c, c.dataset.positive === 'true', 20, 64, 28, false);
+        });
+
+        /* ── Keyboard shortcuts ── */
+        const searchInput = document.getElementById('searchInput');
+
+        document.addEventListener('keydown', e => {
+            if (e.key === '/' && document.activeElement !== searchInput) {
+                e.preventDefault();
+                searchInput?.focus();
+            }
+            if (e.key === 'Escape') {
+                searchInput?.blur();
+            }
+        });
+
+        /* ── Animated placeholder cycling ── */
+        const placeholders = [
+            'Search markets, companies, tickers…',
+            'Try "AAPL" or "Apple"…',
+            'Try "semiconductor" or "NVDA"…',
+            'Search S&P 500 constituents…',
+        ];
+        let phIdx = 0;
+        setInterval(() => {
+            if (document.activeElement === searchInput) return;
+            phIdx = (phIdx + 1) % placeholders.length;
+            if (searchInput) searchInput.placeholder = placeholders[phIdx];
+        }, 3800);
+
+    })();
+</script>

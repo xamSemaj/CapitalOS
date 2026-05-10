@@ -1,0 +1,1182 @@
+/* ═══════════════════════════════════════════════════
+   CAPITALOS — site.css
+   Add Google Fonts to _Layout.cshtml <head>:
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+   ═══════════════════════════════════════════════════ */
+
+:root {
+    /* Palette */
+    --navy: #001f3f;
+    --navy-mid: #002d5a;
+    --navy-panel: #05274d;
+    --navy-deep: #00152b;
+    --navy-card: #041e38;
+    /* Accents */
+    --gold: #c9a227;
+    --gold-bright: #e6c04a;
+    --sky: #38bdf8;
+    --positive: #00d26a;
+    --positive-bg: rgba(0, 210, 106, 0.10);
+    --negative: #ff5256;
+    --negative-bg: rgba(255, 82, 86, 0.10);
+    /* Text */
+    --text-main: #f0f6ff;
+    --text-mid: #8fafc8;
+    --text-faint: #4d7499;
+    /* Borders */
+    --border: rgba(255, 255, 255, 0.07);
+    --border-mid: rgba(255, 255, 255, 0.13);
+    /* Radii */
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-pill: 999px;
+    /* Fonts */
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-ui: 'Syne', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 16px;
+}
+
+body {
+    background: var(--navy);
+    color: var(--text-main);
+    font-family: var(--font-ui);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+a {
+    color: var(--sky);
+    text-decoration: none;
+}
+
+    a:hover {
+        color: var(--text-main);
+    }
+
+/* ───────────────────────────────────────────
+   NAV  (your _Layout.cshtml navbar)
+─────────────────────────────────────────── */
+.navbar,
+.main-nav,
+header {
+    background: rgba(0, 21, 43, 0.92) !important;
+    border-bottom: 1px solid var(--border) !important;
+    backdrop-filter: blur(16px);
+}
+
+/* ───────────────────────────────────────────
+   TICKER TAPE
+─────────────────────────────────────────── */
+.ticker-wrap {
+    height: 36px;
+    background: var(--navy-deep);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+    .ticker-wrap::before,
+    .ticker-wrap::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 80px;
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .ticker-wrap::before {
+        left: 0;
+        background: linear-gradient(90deg, var(--navy-deep), transparent);
+    }
+
+    .ticker-wrap::after {
+        right: 0;
+        background: linear-gradient(-90deg, var(--navy-deep), transparent);
+    }
+
+.ticker-label {
+    flex-shrink: 0;
+    padding: 0 1rem 0 1.25rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    z-index: 3;
+    background: var(--navy-deep);
+}
+
+.ticker-track {
+    display: flex;
+    gap: 0;
+    animation: ticker-scroll 55s linear infinite;
+    white-space: nowrap;
+}
+
+    .ticker-track:hover {
+        animation-play-state: paused;
+    }
+
+@keyframes ticker-scroll {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+.tick-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0 1.4rem;
+    font-size: 0.78rem;
+    border-right: 1px solid var(--border);
+    cursor: default;
+}
+
+.tick-sym {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    color: var(--text-main);
+}
+
+.tick-price {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-mid);
+}
+
+.tick-chg {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+    .tick-chg.pos {
+        color: var(--positive);
+    }
+
+    .tick-chg.neg {
+        color: var(--negative);
+    }
+
+/* ───────────────────────────────────────────
+   SHARED PAGE SHELL  (both pages use this)
+─────────────────────────────────────────── */
+.cap-page {
+    position: relative;
+    min-height: calc(100vh - 98px);
+    padding: 1.75rem;
+    background: radial-gradient(ellipse 60% 50% at 10% 0%, rgba(56, 189, 248, 0.07), transparent 60%), radial-gradient(ellipse 45% 40% at 90% 100%, rgba(201, 162, 39, 0.06), transparent 55%), var(--navy);
+}
+
+    /* subtle grid overlay */
+    .cap-page::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+        background-size: 48px 48px;
+        pointer-events: none;
+        mask-image: radial-gradient(ellipse 90% 70% at 50% 100%, rgba(0,0,0,0.6), transparent 80%);
+        -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 100%, rgba(0,0,0,0.6), transparent 80%);
+    }
+
+.cap-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 1320px;
+    margin: 0 auto;
+}
+
+/* ───────────────────────────────────────────
+   SHARED UTILITIES
+─────────────────────────────────────────── */
+.eyebrow {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 0.4rem;
+}
+
+.badge-chg {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+}
+
+    .badge-chg.pos {
+        background: var(--positive-bg);
+        color: var(--positive);
+        border: 1px solid rgba(0,210,106,0.28);
+    }
+
+    .badge-chg.neg {
+        background: var(--negative-bg);
+        color: var(--negative);
+        border: 1px solid rgba(255,82,86,0.28);
+    }
+
+.positive-text {
+    color: var(--positive);
+}
+
+.negative-text {
+    color: var(--negative);
+}
+
+.market-error {
+    margin-bottom: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    background: rgba(255, 82, 86, 0.08);
+    border: 1px solid rgba(255, 82, 86, 0.3);
+    color: #ffaaab;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════
+   HOME / INDEX  —  Stock Detail Page
+   ═══════════════════════════════════════════════════ */
+
+.market-home {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+/* ── Search bar (top of main col) ── */
+.stock-search-form {
+    display: flex;
+    gap: 0.65rem;
+    margin-bottom: 0;
+}
+
+    .stock-search-form input {
+        flex: 1;
+        background: rgba(4, 30, 56, 0.9);
+        color: var(--text-main);
+        border: 1px solid var(--border-mid);
+        border-radius: var(--radius-pill);
+        padding: 0.65rem 1.15rem;
+        font-family: var(--font-ui);
+        font-size: 0.92rem;
+        font-weight: 600;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+        .stock-search-form input::placeholder {
+            color: var(--text-faint);
+            font-weight: 400;
+        }
+
+        .stock-search-form input:focus {
+            border-color: rgba(56, 189, 248, 0.5);
+        }
+
+    .stock-search-form button {
+        background: var(--gold);
+        color: var(--navy-deep);
+        border: none;
+        border-radius: var(--radius-pill);
+        padding: 0.65rem 1.3rem;
+        font-family: var(--font-ui);
+        font-size: 0.88rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+        .stock-search-form button:hover {
+            background: var(--gold-bright);
+        }
+
+/* ── Stock header card ── */
+.stock-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1.5rem 1.75rem;
+    background: var(--navy-card);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-lg);
+}
+
+.stock-symbol-display {
+    font-family: var(--font-display);
+    font-size: clamp(3.2rem, 6vw, 5rem);
+    line-height: 0.85;
+    letter-spacing: 0.02em;
+    color: var(--text-main);
+    margin: 0.5rem 0 0.6rem;
+}
+
+.company-name {
+    font-size: 0.9rem;
+    color: var(--text-mid);
+    font-weight: 600;
+    margin: 0;
+}
+
+.price-block {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    white-space: nowrap;
+    padding-top: 0.25rem;
+}
+
+.price {
+    font-family: var(--font-mono);
+    font-size: clamp(1.75rem, 2.8vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-main);
+    display: block;
+}
+
+/* legacy .change kept for JS compat; badge-chg is the new style */
+.change {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    font-weight: 700;
+    background: var(--positive-bg);
+    color: var(--positive);
+    border: 1px solid rgba(0, 210, 106, 0.28);
+}
+
+    .change.negative {
+        background: var(--negative-bg);
+        color: var(--negative);
+        border-color: rgba(255, 82, 86, 0.28);
+    }
+
+.last-updated {
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    font-family: var(--font-mono);
+}
+
+/* ── Chart card ── */
+.chart-card {
+    background: var(--navy-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.chart-toolbar {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+    .chart-toolbar button {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-faint);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        padding: 0.4rem 0.85rem;
+        font-family: var(--font-ui);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+
+        .chart-toolbar button:hover,
+        .chart-toolbar button.active {
+            background: rgba(56, 189, 248, 0.12);
+            color: var(--text-main);
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+.chart-shell {
+    height: clamp(260px, 36vh, 380px);
+    position: relative;
+}
+
+#mainChart {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.empty-chart-message {
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: var(--text-faint);
+    font-size: 0.9rem;
+}
+
+/* ── Stats grid (below chart) ── */
+.market-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.market-card {
+    background: var(--navy-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+}
+
+.market-card-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 0.5rem;
+}
+
+.market-card-value {
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* ── Sidebar ── */
+.market-sidebar {
+    background: var(--navy-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    position: sticky;
+    top: 80px;
+}
+
+.sidebar-heading {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 1rem;
+}
+
+.watch-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--text-main);
+    transition: all 0.15s;
+}
+
+    .watch-item:last-child {
+        border-bottom: none;
+    }
+
+    .watch-item:hover {
+        color: var(--text-main);
+    }
+
+.watch-item-left {
+    min-width: 0;
+}
+
+.watch-symbol {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    display: block;
+}
+
+.watch-name {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    font-weight: 600;
+    display: block;
+    margin-top: 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.watch-right {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.watch-price {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: block;
+}
+
+.watch-change-positive {
+    color: var(--positive);
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    display: block;
+    margin-top: 0.15rem;
+}
+
+.watch-change-negative {
+    color: var(--negative);
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    display: block;
+    margin-top: 0.15rem;
+}
+
+.watch-view-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.7rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-mid);
+    color: var(--text-mid);
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: all 0.15s;
+    text-decoration: none;
+}
+
+    .watch-view-btn:hover {
+        border-color: rgba(56, 189, 248, 0.45);
+        color: var(--sky);
+        background: rgba(56, 189, 248, 0.06);
+    }
+
+/* Home page main layout — grid rows */
+.market-main {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* ═══════════════════════════════════════════════════
+   STOCKS / INDEX  —  Discovery & Search Page
+   ═══════════════════════════════════════════════════ */
+
+/* ── Index bar (market overview) ── */
+.index-bar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.index-card {
+    background: var(--navy-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1.1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.idx-meta {
+    min-width: 0;
+}
+
+.idx-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 0.3rem;
+}
+
+.idx-value {
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.idx-spark {
+    flex-shrink: 0;
+}
+
+.idx-change {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.22rem 0.55rem;
+    border-radius: var(--radius-pill);
+    flex-shrink: 0;
+}
+
+    .idx-change.pos {
+        color: var(--positive);
+        background: var(--positive-bg);
+    }
+
+    .idx-change.neg {
+        color: var(--negative);
+        background: var(--negative-bg);
+    }
+
+/* ── Section meta row ── */
+.section-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.1rem;
+}
+
+.section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+}
+
+.section-link {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--sky);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+}
+
+    .section-link:hover {
+        color: var(--text-main);
+    }
+
+/* ── Discovery 3-col grid ── */
+.discovery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+}
+
+.discovery-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+/* ── Pill column headings ── */
+.col-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-main);
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-pill);
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.col-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--gold);
+}
+
+    .col-dot.green {
+        background: var(--positive);
+    }
+
+    .col-dot.red {
+        background: var(--negative);
+    }
+
+    .col-dot.blue {
+        background: var(--sky);
+    }
+
+/* ── Featured card ── */
+.featured-card {
+    position: relative;
+    min-height: 160px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-mid);
+    background: var(--navy-card);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.3rem 1.4rem 1.15rem;
+    text-decoration: none;
+    color: var(--text-main);
+    transition: border-color 0.2s, transform 0.18s;
+    cursor: pointer;
+}
+
+    .featured-card:hover {
+        border-color: rgba(56, 189, 248, 0.35);
+        transform: translateY(-2px);
+        color: var(--text-main);
+    }
+
+    /* canvas sparkline sits in background */
+    .featured-card canvas.bg-spark {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 72px;
+        opacity: 0.4;
+        pointer-events: none;
+    }
+
+.featured-symbol {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 3.5vw, 3.4rem);
+    line-height: 0.85;
+    letter-spacing: 0.02em;
+    display: block;
+}
+
+.featured-name {
+    font-size: 0.82rem;
+    color: var(--text-mid);
+    font-weight: 600;
+    display: block;
+    margin-top: 0.4rem;
+}
+
+.featured-price-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0.75rem;
+    position: relative;
+    z-index: 1;
+}
+
+.featured-price {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.featured-vol {
+    font-size: 0.7rem;
+    color: var(--text-faint);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+/* ── Stock list card (rows below featured) ── */
+.list-card {
+    background: var(--navy-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.discovery-stock-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.85rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--text-main);
+    transition: background 0.15s;
+}
+
+    .discovery-stock-row:last-child {
+        border-bottom: none;
+    }
+
+    .discovery-stock-row:hover {
+        background: rgba(255, 255, 255, 0.025);
+        color: var(--text-main);
+    }
+
+.row-bar {
+    width: 3px;
+    height: 30px;
+    border-radius: 2px;
+    background: var(--positive);
+    flex-shrink: 0;
+}
+
+    .row-bar.neg {
+        background: var(--negative);
+    }
+
+.row-info {
+    min-width: 0;
+}
+
+.row-sym {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    display: block;
+}
+
+.row-co {
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    margin-top: 0.18rem;
+}
+
+.row-sparkline {
+    flex-shrink: 0;
+}
+
+    .row-sparkline canvas {
+        display: block;
+    }
+
+.row-price-block {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.row-price {
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    font-weight: 600;
+    display: block;
+}
+
+.row-pct {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: block;
+    margin-top: 0.15rem;
+}
+
+    .row-pct.pos {
+        color: var(--positive);
+    }
+
+    .row-pct.neg {
+        color: var(--negative);
+    }
+
+/* ── Search bar ── */
+.search-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 0.8rem 0.8rem 1.4rem;
+    background: rgba(4, 30, 56, 0.9);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-pill);
+    backdrop-filter: blur(12px);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+    .search-bar-wrap:focus-within {
+        border-color: rgba(56, 189, 248, 0.45);
+        box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.07);
+    }
+
+.search-bar-icon {
+    font-size: 1.1rem;
+    color: var(--text-faint);
+    flex-shrink: 0;
+}
+
+.search-bar-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-main);
+    font-family: var(--font-ui);
+    font-size: 1.05rem;
+    font-weight: 600;
+    min-width: 0;
+}
+
+    .search-bar-input::placeholder {
+        color: var(--text-faint);
+        font-weight: 400;
+    }
+
+.search-kbd-hints {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+.kbd-hint {
+    padding: 0.18rem 0.45rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-mid);
+    border-radius: 5px;
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    color: var(--text-faint);
+}
+
+.search-submit-btn {
+    flex-shrink: 0;
+    background: var(--gold);
+    color: var(--navy-deep);
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 0.65rem 1.35rem;
+    font-family: var(--font-ui);
+    font-size: 0.88rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+
+    .search-submit-btn:hover {
+        background: var(--gold-bright);
+    }
+
+    .search-submit-btn:active {
+        transform: scale(0.97);
+    }
+
+/* ── Results panel ── */
+.results-panel {
+    background: var(--navy-card);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.results-panel-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.15rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.results-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.results-count {
+    font-size: 0.82rem;
+    color: var(--text-faint);
+    font-weight: 600;
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .results-table th {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+    }
+
+    .results-table td {
+        padding: 0.95rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+    }
+
+    .results-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .results-table tbody tr:hover td {
+        background: rgba(255,255,255,0.02);
+    }
+
+.res-symbol {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    letter-spacing: 0.06em;
+    color: var(--text-main);
+}
+
+.res-company {
+    font-size: 0.88rem;
+    color: var(--text-mid);
+    font-weight: 600;
+}
+
+.res-region {
+    font-size: 0.8rem;
+    color: var(--text-faint);
+}
+
+.view-stock-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.38rem 0.8rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-mid);
+    color: var(--text-mid);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.15s;
+    float: right;
+}
+
+    .view-stock-link:hover {
+        border-color: rgba(56, 189, 248, 0.45);
+        color: var(--sky);
+        background: rgba(56, 189, 248, 0.06);
+    }
+
+.no-results {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* ══════════════════════════
+   RESPONSIVE
+══════════════════════════ */
+@media (max-width: 1024px) {
+    .index-bar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .market-home {
+        grid-template-columns: 1fr;
+    }
+
+    .market-sidebar {
+        position: static;
+    }
+
+    .discovery-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .search-kbd-hints {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .cap-page {
+        padding: 1rem;
+    }
+
+    .market-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .index-bar {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .search-bar-wrap {
+        border-radius: var(--radius-lg);
+        padding: 0.65rem 0.65rem 0.65rem 1rem;
+    }
+
+    .search-bar-input {
+        font-size: 0.9rem;
+    }
+
+    .stock-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .price-block {
+        text-align: left;
+        align-items: flex-start;
+    }
+
+    .results-table th:nth-child(3),
+    .results-table td:nth-child(3) {
+        display: none;
+    }
+}
+
+/* keep footer hidden as per original */
+footer, .footer {
+    display: none;
+}

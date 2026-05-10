@@ -1,0 +1,23 @@
+﻿@model CapitalOS.Models.StockDiscoveryItem
+
+@{
+    var positive = Model.ChangePercent >= 0;
+}
+
+<a asp-controller="Home"
+   asp-action="Index"
+   asp-route-symbol="@Model.Symbol"
+   class="discovery-stock">
+
+    <div>
+        <span class="stock-symbol">@Model.Symbol</span>
+        <span class="stock-name">@Model.CompanyName</span>
+    </div>
+
+    <div class="stock-mini-price">
+        <strong>$@Model.Price.ToString("N2")</strong>
+        <span class="@(positive ? "positive-text" : "negative-text")">
+            @(positive ? "+" : "")@Model.ChangePercent.ToString("N2")%
+        </span>
+    </div>
+</a>
