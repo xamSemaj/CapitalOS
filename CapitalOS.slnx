@@ -1,6 +1,4 @@
 <Solution>
-  <Folder Name="/Solution Items/">
-    <File Path="Dockerfile.dockerfile" />
-  </Folder>
+  <Folder Name="/Solution Items/" />
   <Project Path="CapitalOS/CapitalOS.csproj" />
 </Solution>
