@@ -1,4 +1,5 @@
-﻿@model CapitalOS.Models.StockSearchViewModel
+﻿@using System.Text.Json
+@model CapitalOS.Models.StockSearchViewModel
 @{
     ViewData["Title"] = "Markets — CapitalOS";
 }
@@ -102,7 +103,12 @@
                        class="featured-card"
                        data-positive="@pos.ToString().ToLower()">
 
-                        <canvas class="bg-spark"></canvas>
+                        @{
+                            var featPointsJson = JsonSerializer.Serialize(feat.ChartPoints.Select(x => x.Price));
+                        }
+
+                        <canvas class="bg-spark"
+                                data-points='@Html.Raw(featPointsJson)'></canvas>
 
                         <div>
                             <span class="featured-symbol">@feat.Symbol</span>
@@ -134,8 +140,13 @@
                                     <span class="row-co">@stock.CompanyName</span>
                                 </div>
                                 <div class="row-sparkline">
+                                    @{
+                                        var stockPointsJson = JsonSerializer.Serialize(stock.ChartPoints.Select(x => x.Price));
+                                    }
+
                                     <canvas width="64" height="28"
                                             data-positive="@sPos.ToString().ToLower()"
+                                            data-points='@Html.Raw(stockPointsJson)'
                                             class="row-spark-canvas"></canvas>
                                 </div>
                                 <div class="row-price-block">
@@ -304,7 +315,7 @@
                     <span class="kbd-hint">↵ Search</span>
                     <span class="kbd-hint">Esc</span>
                 </div>
-                <button type="submit" class="search-submit-btn">Search Markets</button>
+                <button type="submit" class="search-submit-btn">Search</button>
             </div>
         </form>
 
@@ -374,37 +385,45 @@
    SCRIPTS
 ══════════════════════════════════════════════ *@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
 <script>
     (function () {
-        /* ── Ticker tape: duplicate for seamless scroll ── */
-        const track = document.getElementById('tickerTrack');
-        if (track) track.innerHTML += track.innerHTML;
 
-        /* ── Random walk helper for sparklines ──
-           Replace data with real historical points from your API if available. */
-        function randomWalk(points, vol, forceDir) {
-            const d = [100];
-            for (let i = 1; i < points; i++) {
-                const bias = (forceDir || 0) * 0.005;
-                d.push(Math.max(d[i - 1] * (1 + bias + (Math.random() - 0.5) * vol), 0.01));
+        function getCanvasPoints(canvas, positive) {
+            try {
+                const points = JSON.parse(canvas.dataset.points || "[]")
+                    .map(Number)
+                    .filter(x => Number.isFinite(x));
+
+                if (points.length > 1) {
+                    return points;
+                }
+            } catch {
+                // Fall through to stable placeholder.
             }
-            return d;
+
+            // Stable fallback for placeholder/index cards.
+            return positive
+                ? [100, 101, 100.8, 102, 103.5, 103, 104.2, 105]
+                : [100, 99.4, 99.8, 98.7, 97.9, 98.1, 97.2, 96.5];
         }
 
-        /* ── Shared Chart.js sparkline renderer ── */
         function drawSparkline(canvas, positive, points, w, h, filled) {
             if (!canvas) return;
-            canvas.width  = w || canvas.width;
+
+            canvas.width = w || canvas.width;
             canvas.height = h || canvas.height;
+
             const color = positive ? '#00d26a' : '#ff5256';
-            const dir   = positive ? 1 : -1;
-            const data  = randomWalk(points, 0.018, dir);
+            const data = getCanvasPoints(canvas, positive);
 
             const ctx = canvas.getContext('2d');
+
             let bg = false;
+
             if (filled) {
                 const g = ctx.createLinearGradient(0, 0, 0, h || canvas.height);
-                g.addColorStop(0, (positive ? 'rgba(0,210,106,0.22)' : 'rgba(255,82,86,0.22)'));
+                g.addColorStop(0, positive ? 'rgba(0,210,106,0.22)' : 'rgba(255,82,86,0.22)');
                 g.addColorStop(1, 'rgba(0,0,0,0)');
                 bg = g;
             }
@@ -414,45 +433,52 @@
                 data: {
                     labels: data.map((_, i) => i),
                     datasets: [{
-                        data,
+                        data: data,
                         borderColor: color,
-                        borderWidth: filled ? 1.5 : 1.5,
+                        borderWidth: 1.5,
                         pointRadius: 0,
                         tension: 0.4,
                         fill: filled,
-                        backgroundColor: bg || false,
+                        backgroundColor: bg || false
                     }]
                 },
                 options: {
                     responsive: false,
                     animation: false,
-                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
-                    scales: { x: { display: false }, y: { display: false } }
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    }
                 }
             });
         }
 
-        /* ── Index bar sparklines ── */
+        // Index bar sparklines
         document.querySelectorAll('.idx-spark-canvas').forEach(c => {
             drawSparkline(c, c.dataset.positive === 'true', 30, 80, 34, false);
         });
 
-        /* ── Featured card background sparklines ── */
+        // Featured card background sparklines
         document.querySelectorAll('.featured-card').forEach(card => {
             const canvas = card.querySelector('canvas.bg-spark');
             if (!canvas) return;
+
             const pos = card.dataset.positive === 'true';
-            /* size canvas to card width at render time */
             const w = card.offsetWidth || 280;
+
             drawSparkline(canvas, pos, 50, w, 72, true);
         });
 
-        /* ── Row sparklines ── */
+        // Row sparklines
         document.querySelectorAll('canvas.row-spark-canvas').forEach(c => {
             drawSparkline(c, c.dataset.positive === 'true', 20, 64, 28, false);
         });
 
-        /* ── Keyboard shortcuts ── */
+        // Keyboard shortcuts
         const searchInput = document.getElementById('searchInput');
 
         document.addEventListener('keydown', e => {
@@ -460,23 +486,30 @@
                 e.preventDefault();
                 searchInput?.focus();
             }
+
             if (e.key === 'Escape') {
                 searchInput?.blur();
             }
         });
 
-        /* ── Animated placeholder cycling ── */
+        // Animated placeholder cycling
         const placeholders = [
             'Search markets, companies, tickers…',
             'Try "AAPL" or "Apple"…',
             'Try "semiconductor" or "NVDA"…',
-            'Search S&P 500 constituents…',
+            'Search S&P 500 constituents…'
         ];
+
         let phIdx = 0;
+
         setInterval(() => {
             if (document.activeElement === searchInput) return;
+
             phIdx = (phIdx + 1) % placeholders.length;
-            if (searchInput) searchInput.placeholder = placeholders[phIdx];
+
+            if (searchInput) {
+                searchInput.placeholder = placeholders[phIdx];
+            }
         }, 3800);
 
     })();

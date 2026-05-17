@@ -199,7 +199,8 @@ namespace CapitalOS.Services
                         CompanyName = homeData.FeaturedCompanyName,
                         Price = homeData.CurrentPrice,
                         ChangePercent = homeData.ChangePercent,
-                        Sector = GetSectorPlaceholder(homeData.FeaturedSymbol)
+                        Sector = "Search result",
+                        ChartPoints = homeData.ChartPoints
                     });
                 }
                 catch

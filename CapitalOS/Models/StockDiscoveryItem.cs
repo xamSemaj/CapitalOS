@@ -7,6 +7,6 @@
         public decimal Price { get; set; }
         public decimal ChangePercent { get; set; }
         public string Sector { get; set; } = "";
-
+        public List<StockChartPoint> ChartPoints { get; set; } = new();
     }
 }

@@ -216,33 +216,37 @@
    SCRIPTS
 ══════════════════════════════════════════════ *@
 
-@* Chart.js — only loaded when chart data exists *@
 @if (Model.ChartPoints != null && Model.ChartPoints.Any())
 {
+    var chartLabelsJson = System.Text.Json.JsonSerializer.Serialize(Model.ChartPoints.Select(x => x.Date));
+    var chartPricesJson = System.Text.Json.JsonSerializer.Serialize(Model.ChartPoints.Select(x => x.Price));
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
     <script>
         (function () {
-            const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                                                                              Model.ChartPoints.Select(x => x.Date)));
+            const labels = @Html.Raw(chartLabelsJson);
+            const prices = @Html.Raw(chartPricesJson);
 
-        const prices = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
-                                                                          Model.ChartPoints.Select(x => x.Price)));
-
-        const chartColor = '@chartColor';
-        const chartBg0   = '@chartColorBg0';
+            const chartColor = '@chartColor';
+            const chartBg0 = '@chartColorBg0';
 
             const canvas = document.getElementById('mainChart');
-            const ctx    = canvas.getContext('2d');
 
-            /* gradient fill */
+            if (!canvas || typeof Chart === 'undefined') {
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+
             const grad = ctx.createLinearGradient(0, 0, 0, canvas.offsetHeight || 340);
             grad.addColorStop(0, chartBg0);
             grad.addColorStop(1, 'rgba(0,0,0,0)');
 
-            new Chart(canvas, {
+            const mainChart = new Chart(canvas, {
                 type: 'line',
                 data: {
-                    labels,
+                    labels: labels,
                     datasets: [{
                         label: '@Model.FeaturedSymbol',
                         data: prices,
@@ -253,97 +257,139 @@
                         pointHoverRadius: 5,
                         pointHoverBackgroundColor: chartColor,
                         fill: true,
-                        backgroundColor: grad,
+                        backgroundColor: grad
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
                     plugins: {
-                        legend: { display: false },
+                        legend: {
+                            display: false
+                        },
                         tooltip: {
                             backgroundColor: 'rgba(4,30,56,0.95)',
                             borderColor: 'rgba(255,255,255,0.12)',
                             borderWidth: 1,
                             titleColor: '#8fafc8',
                             bodyColor: '#f0f6ff',
-                            bodyFont: { family: 'JetBrains Mono, monospace', weight: '700' },
+                            bodyFont: {
+                                family: 'JetBrains Mono, monospace',
+                                weight: '700'
+                            },
                             padding: 10,
                             callbacks: {
-                                label: ctx => '$' + ctx.parsed.y.toFixed(2)
+                                label: function (context) {
+                                    return '$' + Number(context.parsed.y).toFixed(2);
+                                }
                             }
                         }
                     },
                     scales: {
                         x: {
-                            ticks: { color: '#4d7499', font: { size: 11 }, maxTicksLimit: 8 },
-                            grid:  { color: 'rgba(255,255,255,0.05)' },
-                            border: { color: 'rgba(255,255,255,0.07)' }
+                            ticks: {
+                                color: '#4d7499',
+                                font: {
+                                    size: 11
+                                },
+                                maxTicksLimit: 8
+                            },
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)'
+                            },
+                            border: {
+                                color: 'rgba(255,255,255,0.07)'
+                            }
                         },
                         y: {
                             position: 'right',
                             ticks: {
                                 color: '#4d7499',
-                                font: { family: 'JetBrains Mono, monospace', size: 11 },
-                                callback: v => '$' + v.toFixed(2)
+                                font: {
+                                    family: 'JetBrains Mono, monospace',
+                                    size: 11
+                                },
+                                callback: function (value) {
+                                    return '$' + Number(value).toFixed(2);
+                                }
                             },
-                            grid:  { color: 'rgba(255,255,255,0.05)' },
-                            border: { color: 'rgba(255,255,255,0.07)' }
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)'
+                            },
+                            border: {
+                                color: 'rgba(255,255,255,0.07)'
+                            }
                         }
                     }
                 }
             });
 
-            /* ── Toolbar range switching ──
-               Wire to your API endpoint — e.g. /Market/Chart?symbol=X&range=1W
-               and re-render or redirect. For now toggles active state only. */
-            document.getElementById('chartToolbar').addEventListener('click', e => {
-                const btn = e.target.closest('button[data-range]');
-                if (!btn) return;
-                document.querySelectorAll('#chartToolbar button').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                /* TODO: fetch new data for btn.dataset.range and update chart.data.datasets[0].data */
-            });
+            const toolbar = document.getElementById('chartToolbar');
+
+            if (toolbar) {
+                toolbar.addEventListener('click', function (event) {
+                    const btn = event.target.closest('button[data-range]');
+
+                    if (!btn) {
+                        return;
+                    }
+
+                    document.querySelectorAll('#chartToolbar button').forEach(function (button) {
+                        button.classList.remove('active');
+                    });
+
+                    btn.classList.add('active');
+
+                    // Later: fetch new data for btn.dataset.range and update mainChart.
+                    // Example:
+                    // mainChart.data.datasets[0].data = newPrices;
+                    // mainChart.update();
+                });
+            }
         })();
     </script>
 }
 
 <script>
-    /* ── Ticker tape — duplicate nodes for seamless loop ── */
-    (function () {
-        const track = document.getElementById('tickerTrack');
-        if (track) {
-            const clone = track.innerHTML;
-            track.innerHTML = clone + clone;   /* duplicate = seamless */
-        }
-    })();
-
-    /* ── Live quote polling ── */
     (function () {
         const symbol = '@Model.FeaturedSymbol';
 
         async function updateLiveQuote() {
             try {
-                const res = await fetch(`/Market/Quote?symbol=${encodeURIComponent(symbol)}`);
-                if (!res.ok) return;
+                const response = await fetch('/Market/Quote?symbol=' + encodeURIComponent(symbol));
 
-                const q = await res.json();
-                const price  = Number(q.price);
-                const change = Number(q.changePercent);
+                if (!response.ok) {
+                    return;
+                }
 
-                document.getElementById('livePrice').textContent = '$' + price.toFixed(2);
+                const quote = await response.json();
 
+                const price = Number(quote.price);
+                const changePercent = Number(quote.changePercent);
+
+                const livePrice = document.getElementById('livePrice');
                 const liveChange = document.getElementById('liveChange');
-                const prefix = change >= 0 ? '+' : '';
-                const arrow  = change >= 0 ? '▲' : '▼';
-                liveChange.textContent = `${arrow} ${prefix}${change.toFixed(2)}%`;
-                liveChange.className   = 'badge-chg ' + (change >= 0 ? 'pos' : 'neg');
+                const lastUpdated = document.getElementById('lastUpdated');
 
-                document.getElementById('lastUpdated').textContent =
-                    'Last updated ' + q.fetchedAt;
-            } catch (err) {
-                console.error('Live quote update failed:', err);
+                if (!livePrice || !liveChange || !lastUpdated) {
+                    return;
+                }
+
+                livePrice.textContent = '$' + price.toFixed(2);
+
+                const prefix = changePercent >= 0 ? '+' : '';
+                const arrow = changePercent >= 0 ? '▲' : '▼';
+
+                liveChange.textContent = arrow + ' ' + prefix + changePercent.toFixed(2) + '%';
+                liveChange.className = 'badge-chg ' + (changePercent >= 0 ? 'pos' : 'neg');
+
+                lastUpdated.textContent = 'Last updated ' + quote.fetchedAt;
+            } catch (error) {
+                console.error('Live quote update failed:', error);
             }
         }
 
@@ -351,11 +397,17 @@
         setInterval(updateLiveQuote, 5 * 60 * 1000);
     })();
 
-    /* ── Keyboard shortcut: / focuses search ── */
-    document.addEventListener('keydown', e => {
-        if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
-            e.preventDefault();
-            document.querySelector('.stock-search-form input')?.focus();
+    document.addEventListener('keydown', function (event) {
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+
+        if (event.key === '/' && activeTag !== 'input' && activeTag !== 'textarea') {
+            event.preventDefault();
+
+            const searchInput = document.querySelector('.stock-search-form input');
+
+            if (searchInput) {
+                searchInput.focus();
+            }
         }
     });
 </script>
