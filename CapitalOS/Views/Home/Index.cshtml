@@ -13,33 +13,18 @@
 <div class="ticker-wrap">
     <div class="ticker-label">LIVE</div>
     <div class="ticker-track" id="tickerTrack">
-        @* Rendered server-side and duplicated in JS below for seamless loop *@
-        @{
-            var tickerSymbols = new[] {
-                new { Sym = "AAPL",  Price = "211.84", Chg = "+1.42%", Pos = true  },
-                new { Sym = "NVDA",  Price = "924.50", Chg = "+3.71%", Pos = true  },
-                new { Sym = "MSFT",  Price = "418.97", Chg = "+0.83%", Pos = true  },
-                new { Sym = "TSLA",  Price = "172.63", Chg = "-2.14%", Pos = false },
-                new { Sym = "GOOGL", Price = "177.41", Chg = "+0.56%", Pos = true  },
-                new { Sym = "META",  Price = "502.18", Chg = "+1.27%", Pos = true  },
-                new { Sym = "AMZN",  Price = "189.62", Chg = "-0.38%", Pos = false },
-                new { Sym = "NFLX",  Price = "648.91", Chg = "+2.05%", Pos = true  },
-                new { Sym = "AMD",   Price = "168.23", Chg = "-1.04%", Pos = false },
-                new { Sym = "JPM",   Price = "199.34", Chg = "-0.72%", Pos = false },
-                };
-        }
-        @* First pass — JS duplicates this for the infinite scroll *@
-        @foreach (var t in tickerSymbols)
+        @foreach (var t in Model.TickerItems)
         {
             <span class="tick-item">
-                <span class="tick-sym">@t.Sym</span>
-                <span class="tick-price">$@t.Price</span>
-                <span class="tick-chg @(t.Pos ? "pos" : "neg")">@t.Chg</span>
+                <span class="tick-sym">@t.Symbol</span>
+                <span class="tick-price">$@t.Price.ToString("N2")</span>
+                <span class="tick-chg @(t.IsPositive ? "pos" : "neg")">
+                    @(t.IsPositive ? "+" : "")@t.ChangePercent.ToString("N2")%
+                </span>
             </span>
         }
     </div>
 </div>
-
 @* ── Page shell ── *@
 <div class="cap-page">
     <div class="cap-inner">

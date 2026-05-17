@@ -114,11 +114,12 @@ namespace CapitalOS.Services
                 FeaturedCompanyName = companyName,
                 CurrentPrice = currentPrice,
                 ChangePercent = Math.Round(changePercent, 2),
-                ChartPoints = chartPoints
+                ChartPoints = chartPoints,
+                TickerItems = await GetTickerItemsCoreAsync()
             };
 
             _cache.Set(cacheKey, model, TimeSpan.FromMinutes(15));
-
+            model.TickerItems = await GetTickerItemsCoreAsync();
             return model;
         }
 
@@ -178,12 +179,15 @@ namespace CapitalOS.Services
         {
             var model = new StockSearchViewModel
             {
-                Query = query
+                Query = query,
+                TickerItems = await GetTickerItemsCoreAsync(),
+                MarketIndices = await GetMarketIndicesAsync()
             };
 
-            // Yahoo does not give us Trading 212-style "most bought" data.
-            // So we build a real-ish discovery page from curated symbols + live quotes.
-            var popularSymbols = new[] { "NVDA", "MSFT", "AAPL", "AMD", "TSLA", "AMZN", "META", "GOOGL", "PLTR" };
+            var popularSymbols = new[]
+            {
+        "NVDA", "MSFT", "AAPL", "AMD", "TSLA", "AMZN", "META", "GOOGL", "PLTR"
+    };
 
             var items = new List<StockDiscoveryItem>();
 
@@ -199,7 +203,7 @@ namespace CapitalOS.Services
                         CompanyName = homeData.FeaturedCompanyName,
                         Price = homeData.CurrentPrice,
                         ChangePercent = homeData.ChangePercent,
-                        Sector = "Search result",
+                        Sector = GetSectorPlaceholder(homeData.FeaturedSymbol),
                         ChartPoints = homeData.ChartPoints
                     });
                 }
@@ -233,8 +237,6 @@ namespace CapitalOS.Services
                         x.CompanyName.ToUpper().Contains(cleanedQuery))
                     .ToList();
 
-                // If the user searches an exact ticker we have not already loaded,
-                // attempt to fetch it directly.
                 if (!model.SearchResults.Any())
                 {
                     try
@@ -247,7 +249,8 @@ namespace CapitalOS.Services
                             CompanyName = homeData.FeaturedCompanyName,
                             Price = homeData.CurrentPrice,
                             ChangePercent = homeData.ChangePercent,
-                            Sector = "Search result"
+                            Sector = "Search result",
+                            ChartPoints = homeData.ChartPoints
                         });
                     }
                     catch
@@ -353,5 +356,176 @@ namespace CapitalOS.Services
                 _ => "Market"
             };
         }
+
+        private async Task<List<StockTickerItem>> GetTickerItemsAsync()
+        {
+            var cacheKey = "yahoo_real_ticker_items";
+
+            if (_cache.TryGetValue(cacheKey, out List<StockTickerItem>? cachedTicker) &&
+                cachedTicker != null)
+            {
+                return cachedTicker;
+            }
+
+            var tickerSymbols = new[]
+            {
+        "AAPL", "NVDA", "MSFT", "TSLA", "GOOGL",
+        "META", "AMZN", "NFLX", "AMD", "JPM"
+    };
+
+            var tickerItems = new List<StockTickerItem>();
+
+            foreach (var symbol in tickerSymbols)
+            {
+                try
+                {
+                    var data = await GetHomeMarketDataAsync(symbol);
+
+                    tickerItems.Add(new StockTickerItem
+                    {
+                        Symbol = data.FeaturedSymbol,
+                        CompanyName = data.FeaturedCompanyName,
+                        Price = data.CurrentPrice,
+                        ChangePercent = data.ChangePercent
+                    });
+                }
+                catch
+                {
+                    // If one ticker fails, don't kill the entire page.
+                }
+            }
+
+            _cache.Set(cacheKey, tickerItems, TimeSpan.FromMinutes(5));
+
+            return tickerItems;
+        }
+
+        private async Task<List<StockTickerItem>> GetTickerItemsCoreAsync()
+        {
+            var cacheKey = "yahoo_real_ticker_items";
+
+            if (_cache.TryGetValue(cacheKey, out List<StockTickerItem>? cachedTicker) &&
+                cachedTicker != null)
+            {
+                return cachedTicker;
+            }
+
+            var tickerSymbols = new[]
+            {
+        "AAPL", "NVDA", "MSFT", "TSLA", "GOOGL",
+        "META", "AMZN", "NFLX", "AMD", "JPM"
+    };
+
+            var tickerItems = new List<StockTickerItem>();
+
+            foreach (var symbol in tickerSymbols)
+            {
+                try
+                {
+                    var cleanSymbol = CleanSymbol(symbol);
+
+                    var url =
+                        $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(cleanSymbol)}?range=5d&interval=1d";
+
+                    using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.UserAgent.ParseAdd("Mozilla/5.0 CapitalOS/1.0");
+
+                    var response = await _httpClient.SendAsync(request);
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        continue;
+                    }
+
+                    var json = await response.Content.ReadAsStringAsync();
+
+                    using var document = JsonDocument.Parse(json);
+                    var root = document.RootElement;
+
+                    var result = GetFirstChartResult(root);
+                    var meta = result.GetProperty("meta");
+
+                    var currentPrice = GetDecimalFromMeta(meta, "regularMarketPrice");
+                    var previousClose = GetDecimalFromMeta(meta, "previousClose");
+
+                    var changePercent = previousClose == 0
+                        ? 0
+                        : ((currentPrice - previousClose) / previousClose) * 100;
+
+                    var longName = GetStringFromMeta(meta, "longName");
+                    var shortName = GetStringFromMeta(meta, "shortName");
+
+                    var companyName = !string.IsNullOrWhiteSpace(longName)
+                        ? longName
+                        : !string.IsNullOrWhiteSpace(shortName)
+                            ? shortName
+                            : GetPlaceHolderCompanyName(cleanSymbol);
+
+                    tickerItems.Add(new StockTickerItem
+                    {
+                        Symbol = cleanSymbol,
+                        CompanyName = companyName,
+                        Price = currentPrice,
+                        ChangePercent = Math.Round(changePercent, 2)
+                    });
+                }
+                catch
+                {
+                    // Ignore single ticker failure.
+                }
+            }
+
+            _cache.Set(cacheKey, tickerItems, TimeSpan.FromMinutes(5));
+
+            return tickerItems;
+        }
+
+        private async Task<List<MarketIndexItem>> GetMarketIndicesAsync()
+        {
+            var cacheKey = "yahoo_market_indices";
+
+            if (_cache.TryGetValue(cacheKey, out List<MarketIndexItem>? cachedIndices) &&
+                cachedIndices != null)
+            {
+                return cachedIndices;
+            }
+
+            var indexSymbols = new[]
+            {
+        new { Symbol = "^GSPC", Label = "S&P 500" },
+        new { Symbol = "^IXIC", Label = "NASDAQ" },
+        new { Symbol = "^DJI",  Label = "DOW JONES" },
+        new { Symbol = "^VIX",  Label = "VIX" }
+    };
+
+            var indices = new List<MarketIndexItem>();
+
+            foreach (var index in indexSymbols)
+            {
+                try
+                {
+                    var data = await GetHomeMarketDataAsync(index.Symbol);
+
+                    indices.Add(new MarketIndexItem
+                    {
+                        Symbol = data.FeaturedSymbol,
+                        Label = index.Label,
+                        Price = data.CurrentPrice,
+                        ChangePercent = data.ChangePercent,
+                        ChartPoints = data.ChartPoints
+                    });
+                }
+                catch
+                {
+                    // No fake fallback. If Yahoo fails, this index is simply not shown.
+                }
+            }
+
+            _cache.Set(cacheKey, indices, TimeSpan.FromMinutes(15));
+
+            return indices;
+        }
+
     }
 }
+

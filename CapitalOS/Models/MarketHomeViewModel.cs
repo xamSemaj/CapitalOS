@@ -9,5 +9,7 @@
 
         public List<StockChartPoint> ChartPoints { get; set; } = new();
 
+        public List<StockTickerItem> TickerItems { get; set; } = new();
+
     }
 }

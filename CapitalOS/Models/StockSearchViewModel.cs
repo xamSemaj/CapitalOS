@@ -3,7 +3,8 @@
     public class StockSearchViewModel
     {
         public string? Query { get; set; }
-
+        public List<StockTickerItem> TickerItems { get; set; } = new();
+        public List<MarketIndexItem> MarketIndices { get; set; } = new();
         public List<StockDiscoveryItem> TopGainers { get; set; } = new();
         public List<StockDiscoveryItem> TopLosers { get; set; } = new();
         public List<StockDiscoveryItem> MostActive { get; set; } = new();

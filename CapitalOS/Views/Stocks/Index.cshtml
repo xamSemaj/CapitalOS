@@ -8,23 +8,19 @@
 <div class="ticker-wrap">
     <div class="ticker-label">LIVE</div>
     <div class="ticker-track" id="tickerTrack">
-        @{
-            /* Combine all three lists for a richer ticker */
-            var allStocks = Model.MostActive
-            .Concat(Model.TopGainers)
-            .Concat(Model.TopLosers)
-            .Take(12)
-            .ToList();
-        }
-        @foreach (var t in allStocks)
+        @foreach (var t in Model.TickerItems)
         {
-            <span class="tick-item">
+            <a asp-controller="Home"
+               asp-action="Index"
+               asp-route-symbol="@t.Symbol"
+               class="tick-item"
+               aria-label="View @t.Symbol details">
                 <span class="tick-sym">@t.Symbol</span>
                 <span class="tick-price">$@t.Price.ToString("N2")</span>
-                <span class="tick-chg @(t.ChangePercent >= 0 ? "pos" : "neg")">
-                    @(t.ChangePercent >= 0 ? "+" : "")@t.ChangePercent.ToString("N2")%
+                <span class="tick-chg @(t.IsPositive ? "pos" : "neg")">
+                    @(t.IsPositive ? "+" : "")@t.ChangePercent.ToString("N2")%
                 </span>
-            </span>
+            </a>
         }
     </div>
 </div>
@@ -38,38 +34,47 @@
             <div class="market-error">@ViewBag.ErrorMessage</div>
         }
 
-        @* ─────────────────────────────────────────
-           INDEX BAR
-           Replace hardcoded values with model data
-           when you add a MarketIndices property.
-        ─────────────────────────────────────────── *@
-        <div class="index-bar" id="indexBar">
-            @* Placeholder cards — swap for @Model.MarketIndices when available *@
-            @{
-                var indices = new[]
+    
+        @if (Model.MarketIndices.Any())
+        {
+            <div class="index-bar" id="indexBar">
+                @foreach (var idx in Model.MarketIndices)
                 {
-                        new { Label = "S&P 500",   Value = "5,308", Chg = "+0.74%", Pos = true  },
-                        new { Label = "NASDAQ",    Value = "16,742",Chg = "+1.12%", Pos = true  },
-                        new { Label = "DOW JONES", Value = "39,814",Chg = "+0.31%", Pos = true  },
-                        new { Label = "VIX",       Value = "14.28", Chg = "-3.50%", Pos = false },
-                        };
-            }
-            @foreach (var idx in indices)
-            {
-                <div class="index-card">
-                    <div class="idx-meta">
-                        <div class="idx-label">@idx.Label</div>
-                        <div class="idx-value">@idx.Value</div>
-                    </div>
-                    <div class="idx-spark">
-                        @* Sparklines rendered by JS below *@
-                        <canvas class="idx-spark-canvas" width="80" height="34"
-                                data-positive="@idx.Pos.ToString().ToLower()"></canvas>
-                    </div>
-                    <span class="idx-change @(idx.Pos ? "pos" : "neg")">@idx.Chg</span>
-                </div>
-            }
-        </div>
+                    var indexPointsJson = JsonSerializer.Serialize(idx.ChartPoints.Select(x => x.Price));
+
+                    <a asp-controller="Home"
+                       asp-action="Index"
+                       asp-route-symbol="@idx.Symbol"
+                       class="index-card"
+                       aria-label="View @idx.Label details">
+                        <div class="idx-meta">
+                            <div class="idx-label">@idx.Label</div>
+                            <div class="idx-value">
+                                @(idx.Symbol == "^VIX" ? idx.Price.ToString("N2") : idx.Price.ToString("N0"))
+                            </div>
+                        </div>
+
+                        <div class="idx-spark">
+                            <canvas class="idx-spark-canvas"
+                                    width="80"
+                                    height="34"
+                                    data-positive="@idx.IsPositive.ToString().ToLower()"
+                                    data-points='@Html.Raw(indexPointsJson)'></canvas>
+                        </div>
+
+                        <span class="idx-change @(idx.IsPositive ? "pos" : "neg")">
+                            @(idx.IsPositive ? "+" : "")@idx.ChangePercent.ToString("N2")%
+                        </span>
+                    </a>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="market-error">
+                Live market index data is currently unavailable.
+            </div>
+        }
 
         @* ─────────────────────────────────────────
            SECTION HEADING
@@ -178,7 +183,12 @@
                        class="featured-card"
                        data-positive="@pos.ToString().ToLower()">
 
-                        <canvas class="bg-spark"></canvas>
+                        @{
+                            var featPointsJson = JsonSerializer.Serialize(feat.ChartPoints.Select(x => x.Price));
+                        }
+
+                        <canvas class="bg-spark"
+                                data-points='@Html.Raw(featPointsJson)'></canvas>
 
                         <div>
                             <span class="featured-symbol">@feat.Symbol</span>
@@ -210,8 +220,14 @@
                                     <span class="row-co">@stock.CompanyName</span>
                                 </div>
                                 <div class="row-sparkline">
-                                    <canvas width="64" height="28"
+                                    @{
+                                        var stockPointsJson = JsonSerializer.Serialize(stock.ChartPoints.Select(x => x.Price));
+                                    }
+
+                                    <canvas width="64"
+                                            height="28"
                                             data-positive="@sPos.ToString().ToLower()"
+                                            data-points='@Html.Raw(stockPointsJson)'
                                             class="row-spark-canvas"></canvas>
                                 </div>
                                 <div class="row-price-block">
@@ -243,7 +259,12 @@
                        class="featured-card"
                        data-positive="@pos.ToString().ToLower()">
 
-                        <canvas class="bg-spark"></canvas>
+                        @{
+                            var featPointsJson = JsonSerializer.Serialize(feat.ChartPoints.Select(x => x.Price));
+                        }
+
+                        <canvas class="bg-spark"
+                                data-points='@Html.Raw(featPointsJson)'></canvas>
 
                         <div>
                             <span class="featured-symbol">@feat.Symbol</span>
@@ -275,8 +296,14 @@
                                     <span class="row-co">@stock.CompanyName</span>
                                 </div>
                                 <div class="row-sparkline">
-                                    <canvas width="64" height="28"
+                                    @{
+                                        var stockPointsJson = JsonSerializer.Serialize(stock.ChartPoints.Select(x => x.Price));
+                                    }
+
+                                    <canvas width="64"
+                                            height="28"
                                             data-positive="@sPos.ToString().ToLower()"
+                                            data-points='@Html.Raw(stockPointsJson)'
                                             class="row-spark-canvas"></canvas>
                                 </div>
                                 <div class="row-price-block">
@@ -389,22 +416,16 @@
 
 <script>
     (function () {
-        function getCanvasPoints(canvas, positive) {
+        function getCanvasPoints(canvas) {
             try {
-                const points = JSON.parse(canvas.dataset.points || "[]")
+                return JSON.parse(canvas.dataset.points || "[]")
                     .map(Number)
-                    .filter(x => Number.isFinite(x));
-
-                if (points.length > 1) {
-                    return points;
-                }
+                    .filter(function (x) {
+                        return Number.isFinite(x);
+                    });
             } catch {
-                // Fall through to stable placeholder.
+                return [];
             }
-
-            return positive
-                ? [100, 101, 100.8, 102, 103.5, 103, 104.2, 105]
-                : [100, 99.4, 99.8, 98.7, 97.9, 98.1, 97.2, 96.5];
         }
 
         function drawSparkline(canvas, positive, w, h, filled) {
@@ -412,11 +433,17 @@
                 return;
             }
 
+            const data = getCanvasPoints(canvas);
+
+            if (data.length < 2) {
+                canvas.style.display = 'none';
+                return;
+            }
+
             canvas.width = w || canvas.width;
             canvas.height = h || canvas.height;
 
             const color = positive ? '#00d26a' : '#ff5256';
-            const data = getCanvasPoints(canvas, positive);
             const ctx = canvas.getContext('2d');
 
             let background = false;
@@ -448,20 +475,12 @@
                     responsive: false,
                     animation: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            enabled: false
-                        }
+                        legend: { display: false },
+                        tooltip: { enabled: false }
                     },
                     scales: {
-                        x: {
-                            display: false
-                        },
-                        y: {
-                            display: false
-                        }
+                        x: { display: false },
+                        y: { display: false }
                     }
                 }
             });
@@ -493,11 +512,14 @@
         document.addEventListener('keydown', function (event) {
             if (event.key === '/' && document.activeElement !== searchInput) {
                 event.preventDefault();
-                searchInput?.focus();
+
+                if (searchInput) {
+                    searchInput.focus();
+                }
             }
 
-            if (event.key === 'Escape') {
-                searchInput?.blur();
+            if (event.key === 'Escape' && searchInput) {
+                searchInput.blur();
             }
         });
 
