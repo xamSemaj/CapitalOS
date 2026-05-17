@@ -384,11 +384,11 @@
 @* ══════════════════════════════════════════════
    SCRIPTS
 ══════════════════════════════════════════════ *@
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <script>
     (function () {
-
         function getCanvasPoints(canvas, positive) {
             try {
                 const points = JSON.parse(canvas.dataset.points || "[]")
@@ -402,36 +402,38 @@
                 // Fall through to stable placeholder.
             }
 
-            // Stable fallback for placeholder/index cards.
             return positive
                 ? [100, 101, 100.8, 102, 103.5, 103, 104.2, 105]
                 : [100, 99.4, 99.8, 98.7, 97.9, 98.1, 97.2, 96.5];
         }
 
-        function drawSparkline(canvas, positive, points, w, h, filled) {
-            if (!canvas) return;
+        function drawSparkline(canvas, positive, w, h, filled) {
+            if (!canvas || typeof Chart === 'undefined') {
+                return;
+            }
 
             canvas.width = w || canvas.width;
             canvas.height = h || canvas.height;
 
             const color = positive ? '#00d26a' : '#ff5256';
             const data = getCanvasPoints(canvas, positive);
-
             const ctx = canvas.getContext('2d');
 
-            let bg = false;
+            let background = false;
 
             if (filled) {
-                const g = ctx.createLinearGradient(0, 0, 0, h || canvas.height);
-                g.addColorStop(0, positive ? 'rgba(0,210,106,0.22)' : 'rgba(255,82,86,0.22)');
-                g.addColorStop(1, 'rgba(0,0,0,0)');
-                bg = g;
+                const gradient = ctx.createLinearGradient(0, 0, 0, h || canvas.height);
+                gradient.addColorStop(0, positive ? 'rgba(0,210,106,0.22)' : 'rgba(255,82,86,0.22)');
+                gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                background = gradient;
             }
 
             new Chart(canvas, {
                 type: 'line',
                 data: {
-                    labels: data.map((_, i) => i),
+                    labels: data.map(function (_, index) {
+                        return index;
+                    }),
                     datasets: [{
                         data: data,
                         borderColor: color,
@@ -439,60 +441,66 @@
                         pointRadius: 0,
                         tension: 0.4,
                         fill: filled,
-                        backgroundColor: bg || false
+                        backgroundColor: background || false
                     }]
                 },
                 options: {
                     responsive: false,
                     animation: false,
                     plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: false }
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: false
+                        }
                     },
                     scales: {
-                        x: { display: false },
-                        y: { display: false }
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            display: false
+                        }
                     }
                 }
             });
         }
 
-        // Index bar sparklines
-        document.querySelectorAll('.idx-spark-canvas').forEach(c => {
-            drawSparkline(c, c.dataset.positive === 'true', 30, 80, 34, false);
+        document.querySelectorAll('.idx-spark-canvas').forEach(function (canvas) {
+            drawSparkline(canvas, canvas.dataset.positive === 'true', 80, 34, false);
         });
 
-        // Featured card background sparklines
-        document.querySelectorAll('.featured-card').forEach(card => {
+        document.querySelectorAll('.featured-card').forEach(function (card) {
             const canvas = card.querySelector('canvas.bg-spark');
-            if (!canvas) return;
 
-            const pos = card.dataset.positive === 'true';
-            const w = card.offsetWidth || 280;
+            if (!canvas) {
+                return;
+            }
 
-            drawSparkline(canvas, pos, 50, w, 72, true);
+            const positive = card.dataset.positive === 'true';
+            const width = card.offsetWidth || 280;
+
+            drawSparkline(canvas, positive, width, 72, true);
         });
 
-        // Row sparklines
-        document.querySelectorAll('canvas.row-spark-canvas').forEach(c => {
-            drawSparkline(c, c.dataset.positive === 'true', 20, 64, 28, false);
+        document.querySelectorAll('canvas.row-spark-canvas').forEach(function (canvas) {
+            drawSparkline(canvas, canvas.dataset.positive === 'true', 64, 28, false);
         });
 
-        // Keyboard shortcuts
         const searchInput = document.getElementById('searchInput');
 
-        document.addEventListener('keydown', e => {
-            if (e.key === '/' && document.activeElement !== searchInput) {
-                e.preventDefault();
+        document.addEventListener('keydown', function (event) {
+            if (event.key === '/' && document.activeElement !== searchInput) {
+                event.preventDefault();
                 searchInput?.focus();
             }
 
-            if (e.key === 'Escape') {
+            if (event.key === 'Escape') {
                 searchInput?.blur();
             }
         });
 
-        // Animated placeholder cycling
         const placeholders = [
             'Search markets, companies, tickers…',
             'Try "AAPL" or "Apple"…',
@@ -500,17 +508,18 @@
             'Search S&P 500 constituents…'
         ];
 
-        let phIdx = 0;
+        let placeholderIndex = 0;
 
-        setInterval(() => {
-            if (document.activeElement === searchInput) return;
+        setInterval(function () {
+            if (document.activeElement === searchInput) {
+                return;
+            }
 
-            phIdx = (phIdx + 1) % placeholders.length;
+            placeholderIndex = (placeholderIndex + 1) % placeholders.length;
 
             if (searchInput) {
-                searchInput.placeholder = placeholders[phIdx];
+                searchInput.placeholder = placeholders[placeholderIndex];
             }
         }, 3800);
-
     })();
 </script>
