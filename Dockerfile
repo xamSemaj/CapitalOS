@@ -11,6 +11,4 @@ COPY --from=build /app/publish .
 
 EXPOSE 8080
 
-ENV PORT=8080
-
-ENTRYPOINT ["sh", "-c", "dotnet CapitalOS.dll --urls http://0.0.0.0:${PORT}"]
+ENTRYPOINT ["sh", "-c", "dotnet CapitalOS.dll --urls http://0.0.0.0:${PORT:-8080}"]
