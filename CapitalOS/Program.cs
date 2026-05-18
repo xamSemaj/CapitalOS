@@ -1,40 +1,31 @@
 using CapitalOS.Services;
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add services to the container BEFORE builder.Build()
 builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
-//builder.Services.AddHttpClient<IStockMarketService, AlphaVantageStockMarketService>();
-builder.Services.AddHttpClient<IStockMarketService, YahooStockMarketService>();
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
-
-// Configure HttpClient with timeout
 builder.Services.AddHttpClient<IStockMarketService, YahooStockMarketService>()
     .ConfigureHttpClient(client =>
     {
-        client.Timeout = TimeSpan.FromSeconds(10); // 10 second timeout
+        client.Timeout = TimeSpan.FromSeconds(10);
     });
 
-//app.UseHttpsRedirection();
+// NOW build the app
+var app = builder.Build();
+
+// Configure the HTTP request pipeline AFTER building
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+
 app.UseRouting();
-
 app.UseAuthorization();
-
 app.MapStaticAssets();
-
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
-
 
 app.Run();
