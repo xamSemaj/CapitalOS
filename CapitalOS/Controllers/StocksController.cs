@@ -22,12 +22,17 @@ namespace CapitalOS.Controllers
             }
             catch (Exception ex)
             {
-                ViewBag.ErrorMessage = ex.Message;
-
-                return View(new StockSearchViewModel
+                var fallbackModel = new MarketHomeViewModel
                 {
-                    Query = query
-                });
+                    FeaturedSymbol =  "NVDA",
+                    FeaturedCompanyName = "Market data unavailable",
+                    CurrentPrice = 0,
+                    ChangePercent = 0,
+                    ChartPoints = new List<StockChartPoint>()
+                };
+                ViewBag.ErrorMessage = $"Error: {ex.Message}";
+                Console.WriteLine($"HomeController Error: {ex}");
+                return View(fallbackModel);
             }
         }
     }
