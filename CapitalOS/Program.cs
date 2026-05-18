@@ -17,6 +17,13 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Configure HttpClient with timeout
+builder.Services.AddHttpClient<IStockMarketService, YahooStockMarketService>()
+    .ConfigureHttpClient(client =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(10); // 10 second timeout
+    });
+
 //app.UseHttpsRedirection();
 app.UseRouting();
 
