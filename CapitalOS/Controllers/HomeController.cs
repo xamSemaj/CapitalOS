@@ -18,41 +18,39 @@ namespace CapitalOS.Controllers
     
 
 
-        public async Task<IActionResult> Index(string symbol = "NVDA")
+        public IActionResult Index(string symbol = "NVDA")
         {
             symbol = string.IsNullOrWhiteSpace(symbol) ? "NVDA" : symbol.Trim().ToUpper();
-            Console.WriteLine($"[CapitalOS] Index START symbol={symbol}");
-
-            try
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-                var dataTask = _stockMarketService.GetHomeMarketDataAsync(symbol);
-
-                Console.WriteLine("[CapitalOS] Awaiting market data...");
-                var completed = await Task.WhenAny(dataTask, Task.Delay(8000, cts.Token));
-
-                if (completed == dataTask)
-                {
-                    Console.WriteLine("[CapitalOS] Market data returned OK");
-                    return View(await dataTask);
-                }
-
-                Console.WriteLine("[CapitalOS] Market data TIMED OUT after 8s — returning fallback");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[CapitalOS] Index EXCEPTION: {ex.GetType().Name}: {ex.Message}");
-            }
-
-            ViewBag.ErrorMessage = "Live market data is currently unavailable.";
             return View(new MarketHomeViewModel
             {
                 FeaturedSymbol = symbol,
-                FeaturedCompanyName = "Market data unavailable",
+                FeaturedCompanyName = "",
                 CurrentPrice = 0,
                 ChangePercent = 0,
                 ChartPoints = new List<StockChartPoint>()
             });
+        }
+
+        [HttpGet("/api/market/{symbol}")]
+        public async Task<IActionResult> MarketData(string symbol = "NVDA")
+        {
+            symbol = string.IsNullOrWhiteSpace(symbol) ? "NVDA" : symbol.Trim().ToUpper();
+            try
+            {
+                var data = await _stockMarketService.GetHomeMarketDataAsync(symbol);
+                return Json(new
+                {
+                    symbol = data.FeaturedSymbol,
+                    companyName = data.FeaturedCompanyName,
+                    price = data.CurrentPrice,
+                    changePercent = data.ChangePercent,
+                    chartPoints = data.ChartPoints.Select(p => new { date = p.Date, price = p.Price })
+                });
+            }
+            catch
+            {
+                return StatusCode(503);
+            }
         }
 
         public IActionResult Privacy()
