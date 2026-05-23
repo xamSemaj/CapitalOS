@@ -20,31 +20,39 @@ namespace CapitalOS.Controllers
 
         public async Task<IActionResult> Index(string symbol = "NVDA")
         {
+            symbol = string.IsNullOrWhiteSpace(symbol) ? "NVDA" : symbol.Trim().ToUpper();
+            Console.WriteLine($"[CapitalOS] Index START symbol={symbol}");
+
             try
             {
-                symbol = string.IsNullOrWhiteSpace(symbol)
-                    ? "NVDA"
-                    : symbol.Trim().ToUpper();
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+                var dataTask = _stockMarketService.GetHomeMarketDataAsync(symbol);
 
-                var model = await _stockMarketService.GetHomeMarketDataAsync(symbol);
+                Console.WriteLine("[CapitalOS] Awaiting market data...");
+                var completed = await Task.WhenAny(dataTask, Task.Delay(8000, cts.Token));
 
-                return View(model);
-            }
-            catch
-            {
-                var fallbackModel = new MarketHomeViewModel
+                if (completed == dataTask)
                 {
-                    FeaturedSymbol = symbol?.ToUpper() ?? "NVDA",
-                    FeaturedCompanyName = "Market data unavailable",
-                    CurrentPrice = 0,
-                    ChangePercent = 0,
-                    ChartPoints = new List<StockChartPoint>()
-                };
+                    Console.WriteLine("[CapitalOS] Market data returned OK");
+                    return View(await dataTask);
+                }
 
-                ViewBag.ErrorMessage = "Live market data is currently unavailable.";
-
-                return View(fallbackModel);
+                Console.WriteLine("[CapitalOS] Market data TIMED OUT after 8s — returning fallback");
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[CapitalOS] Index EXCEPTION: {ex.GetType().Name}: {ex.Message}");
+            }
+
+            ViewBag.ErrorMessage = "Live market data is currently unavailable.";
+            return View(new MarketHomeViewModel
+            {
+                FeaturedSymbol = symbol,
+                FeaturedCompanyName = "Market data unavailable",
+                CurrentPrice = 0,
+                ChangePercent = 0,
+                ChartPoints = new List<StockChartPoint>()
+            });
         }
 
         public IActionResult Privacy()
