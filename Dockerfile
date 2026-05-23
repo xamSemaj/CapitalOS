@@ -9,6 +9,7 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
-EXPOSE 8080
+ENV ASPNETCORE_HTTP_PORTS=80
+EXPOSE 80
 
 ENTRYPOINT ["dotnet", "CapitalOS.dll"]
