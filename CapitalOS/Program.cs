@@ -7,7 +7,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient<IStockMarketService, YahooStockMarketService>()
     .ConfigureHttpClient(client =>
     {
-        client.Timeout = TimeSpan.FromSeconds(10);
+        client.Timeout = TimeSpan.FromSeconds(5);
     });
 
 // NOW build the app
@@ -23,6 +23,8 @@ if (!app.Environment.IsDevelopment())
 app.UseRouting();
 app.UseAuthorization();
 app.MapStaticAssets();
+app.MapGet("/health", () => Results.Ok("healthy"));
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")

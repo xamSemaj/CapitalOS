@@ -416,64 +416,50 @@ namespace CapitalOS.Services
         "META", "AMZN", "NFLX", "AMD", "JPM"
     };
 
-            var tickerItems = new List<StockTickerItem>();
-
-            foreach (var symbol in tickerSymbols)
+            async Task<StockTickerItem?> FetchOne(string symbol)
             {
                 try
                 {
                     var cleanSymbol = CleanSymbol(symbol);
-
-                    var url =
-                        $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(cleanSymbol)}?range=5d&interval=1d";
+                    var url = $"https://query1.finance.yahoo.com/v8/finance/chart/{Uri.EscapeDataString(cleanSymbol)}?range=5d&interval=1d";
 
                     using var request = new HttpRequestMessage(HttpMethod.Get, url);
                     request.Headers.UserAgent.ParseAdd("Mozilla/5.0 CapitalOS/1.0");
 
                     var response = await _httpClient.SendAsync(request);
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        continue;
-                    }
+                    if (!response.IsSuccessStatusCode) return null;
 
                     var json = await response.Content.ReadAsStringAsync();
-
                     using var document = JsonDocument.Parse(json);
-                    var root = document.RootElement;
-
-                    var result = GetFirstChartResult(root);
+                    var result = GetFirstChartResult(document.RootElement);
                     var meta = result.GetProperty("meta");
 
                     var currentPrice = GetDecimalFromMeta(meta, "regularMarketPrice");
                     var previousClose = GetDecimalFromMeta(meta, "previousClose");
-
-                    var changePercent = previousClose == 0
-                        ? 0
-                        : ((currentPrice - previousClose) / previousClose) * 100;
+                    var changePercent = previousClose == 0 ? 0 : ((currentPrice - previousClose) / previousClose) * 100;
 
                     var longName = GetStringFromMeta(meta, "longName");
                     var shortName = GetStringFromMeta(meta, "shortName");
+                    var companyName = !string.IsNullOrWhiteSpace(longName) ? longName
+                        : !string.IsNullOrWhiteSpace(shortName) ? shortName
+                        : GetPlaceHolderCompanyName(cleanSymbol);
 
-                    var companyName = !string.IsNullOrWhiteSpace(longName)
-                        ? longName
-                        : !string.IsNullOrWhiteSpace(shortName)
-                            ? shortName
-                            : GetPlaceHolderCompanyName(cleanSymbol);
-
-                    tickerItems.Add(new StockTickerItem
+                    return new StockTickerItem
                     {
                         Symbol = cleanSymbol,
                         CompanyName = companyName,
                         Price = currentPrice,
                         ChangePercent = Math.Round(changePercent, 2)
-                    });
+                    };
                 }
                 catch
                 {
-                    // Ignore single ticker failure.
+                    return null;
                 }
             }
+
+            var results = await Task.WhenAll(tickerSymbols.Select(FetchOne));
+            var tickerItems = results.Where(x => x != null).Select(x => x!).ToList();
 
             _cache.Set(cacheKey, tickerItems, TimeSpan.FromMinutes(5));
 
